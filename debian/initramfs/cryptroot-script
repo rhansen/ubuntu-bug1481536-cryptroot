@@ -185,10 +185,6 @@ setup_mapping()
 	modprobe -q dm_crypt
 
 	# Make sure the cryptsource device is available
-	udev_settle
-
-	# If the encrypted source device hasn't shown up yet, give it a
-	# little while to deal with removable devices
 
 	# the following lines below have been taken from
 	# /usr/share/initramfs-tools/scripts/local, as suggested per

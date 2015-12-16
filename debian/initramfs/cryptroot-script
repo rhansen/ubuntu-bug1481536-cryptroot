@@ -288,6 +288,7 @@ setup_mapping()
 				message "cryptsetup: cryptsetup failed, bad password or options?"
 				continue
 			fi
+			udev_settle
 		fi
 
 		if [ ! -e "$NEWROOT" ]; then
@@ -306,7 +307,6 @@ setup_mapping()
 				message "cryptsetup: lvm fs found but no lvm configured"
 				return 1
 			fi
-			udev_settle
 
 			# Apparently ROOT is already set in /conf/param.conf for
 			# flashed kernels at least. See bugreport #759720.

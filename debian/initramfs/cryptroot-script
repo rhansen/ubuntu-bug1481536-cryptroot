@@ -155,6 +155,46 @@ parse_options()
 	return 0
 }
 
+# arg #1:  device to wait for
+# arg #2 (optional):  description of what we're waiting for, defaults to $1
+wait_for()
+{
+	if [ ! -e "$1" ]; then
+		log_begin_msg "Waiting for ${2-$1}..."
+
+		# Default delay is 180s
+		slumber=${ROOTDELAY:-180}
+
+		slumber=$(( ${slumber} * 10 ))
+		while [ ! -e "$1" ]; do
+			# Each call to udev_settle can block for up to 30
+			# seconds, so the worst case scenario here is a boot
+			# delay of $ROOTDELAY*10*30 seconds = 15 hours.
+			# However, this could only ever happen if udev
+			# constantly had new events being queued *and* none of
+			# these events resulted in the root device becoming
+			# available.  Still, a more correct solution would
+			# measure against wall time and call udevadm settle
+			# in a loop until the $ROOTDELAY timeout has been
+			# reached.
+			udev_settle
+
+			/bin/sleep 0.1
+			slumber=$(( ${slumber} - 1 ))
+			[ ${slumber} -gt 0 ] || break
+		done
+
+		if [ ${slumber} -gt 0 ]; then
+			log_end_msg 0
+		else
+			log_end_msg 1 || true
+		fi
+	fi
+	# make sure the return value is true if the device exists,
+	# false otherwise
+	[ -e "$1" ]
+}
+
 setup_mapping()
 {
 	local opts count cryptopen cryptremove NEWROOT
@@ -185,45 +225,9 @@ setup_mapping()
 	modprobe -q dm_crypt
 
 	# Make sure the cryptsource device is available
-
-	# the following lines below have been taken from
-	# /usr/share/initramfs-tools/scripts/local, as suggested per
-	# https://launchpad.net/bugs/164044
-	if [ ! -e "$cryptsource" ]; then
-		log_begin_msg "Waiting for encrypted source device..."
-
-		# Default delay is 180s
-		slumber=${ROOTDELAY:-180}
-
-		slumber=$(( ${slumber} * 10 ))
-		while [ ! -e "$cryptsource" ]; do
-			# Each call to udev_settle can block for up to 30
-			# seconds, so the worst case scenario here is a boot
-			# delay of $ROOTDELAY*10*30 seconds = 15 hours.
-			# However, this could only ever happen if udev
-			# constantly had new events being queued *and* none of
-			# these events resulted in the root device becoming
-			# available.  Still, a more correct solution would
-			# measure against wall time and call udevadm settle
-			# in a loop until the $ROOTDELAY timeout has been
-			# reached.
-			udev_settle
-
-			/bin/sleep 0.1
-			slumber=$(( ${slumber} - 1 ))
-			[ ${slumber} -gt 0 ] || break
-		done
-
-		if [ ${slumber} -gt 0 ]; then
-			log_end_msg 0
-		else
-			log_end_msg 1 || true
-		fi
- 	fi
-
-	# We've given up, but we'll let the user fix matters if they can
-	if [ ! -e "${cryptsource}" ]; then
-		
+	if ! wait_for "$cryptsource" "encrypted source device"; then
+		# We've given up, but we'll let the user fix matters
+		# if they can
 		echo "  ALERT! ${cryptsource} does not exist."
 		echo "	Check cryptopts=source= bootarg: cat /proc/cmdline"
 		echo "	or missing modules, devices: cat /proc/modules; ls /dev"

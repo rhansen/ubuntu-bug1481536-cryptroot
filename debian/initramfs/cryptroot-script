@@ -291,8 +291,7 @@ setup_mapping()
 		message "cryptsetup: cryptsetup failed, bad password or options?"
 	done
 
-	udev_settle
-	if [ ! -e "$NEWROOT" ]; then
+	if ! wait_for "$NEWROOT" "unlocked device"; then
 		message "cryptsetup: unknown error setting up device mapping"
 		return 1
 	fi

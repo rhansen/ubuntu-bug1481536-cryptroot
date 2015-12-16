@@ -317,6 +317,13 @@ setup_mapping()
 				echo "ROOT=$NEWROOT" >>/conf/param.conf
 			fi
 		fi
+
+		if ! wait_for "$NEWROOT" "LVM logical volume"; then
+			message "cryptsetup: unknown error setting up LVM logical volume"
+			$cryptremove
+			return 1
+		fi
+
 		FSTYPE="$(/sbin/blkid -s TYPE -o value "$NEWROOT")"
 	fi
 

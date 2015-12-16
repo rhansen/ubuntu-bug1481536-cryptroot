@@ -165,7 +165,7 @@ activate_vg()
 
 	# Detect and activate available volume groups
 	/sbin/lvm vgscan
-	/sbin/lvm vgchange -a y --sysinit
+	/sbin/lvm vgchange -a y --sysinit && udev_settle
 	return $?
 }
 

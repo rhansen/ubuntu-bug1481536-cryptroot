@@ -1,18 +1,22 @@
-cryptsetup (2:1.6.6-5ubuntu2+bug1481536.2~15.10.0) wily; urgency=medium
+cryptsetup (2:1.6.6-5ubuntu2+bug1481536.3~15.10.1) wily; urgency=medium
 
-  * drop version number so that an official update gets installed over
-    this PPA version
-
- -- Richard Hansen <rhansen@rhansen.org>  Tue, 15 Dec 2015 20:18:19 -0500
-
-cryptsetup (2:1.6.6-5ubuntu3) UNRELEASED; urgency=medium
-
+  [ Steve Langasek ]
   * debian/initramfs/cryptroot-script: don't call vgchange, which udev rules
     already handle for us.  Instead we should be calling udevadm settle at
     the right points to ensure devices are visible before we try to use
     them.  Thanks to Richard Hansen for the analysis.  LP: #1481536.
 
- -- Steve Langasek <steve.langasek@ubuntu.com>  Wed, 02 Dec 2015 21:20:13 -0800
+  [ Richard Hansen ]
+  * debian/initramfs/cryptroot-script:
+    - don't assume devices will exist after running 'udevadm settle'
+      (wait until they appear, with a timeout)
+    - wait for the LVM logical volume device to appear before trying
+      to determine its filesystem type
+    - remove an unnecessary call to udev_settle()
+    - miscellaneous cleanups
+    LP: #1481536
+
+ -- Richard Hansen <rhansen@rhansen.org>  Wed, 16 Dec 2015 15:49:33 -0500
 
 cryptsetup (2:1.6.6-5ubuntu2) wily; urgency=medium
 

@@ -277,8 +277,12 @@ setup_mapping()
 
 	# Try to get a satisfactory password $crypttries times
 	count=0
-	while [ $crypttries -le 0 ] || [ $count -lt $crypttries ]; do
+	while true; do
 		export CRYPTTAB_TRIED="$count"
+		if [ $crypttries -gt 0 ] && [ $count -ge $crypttries ]; then
+			message "cryptsetup: maximum number of tries exceeded for $crypttarget"
+			return 1
+		fi
 		count=$(( $count + 1 ))
 
 		if [ ! -e "$NEWROOT" ]; then
@@ -291,11 +295,6 @@ setup_mapping()
 
 		break
 	done
-
-	if [ $crypttries -gt 0 ] && [ $count -gt $crypttries ]; then
-		message "cryptsetup: maximum number of tries exceeded for $crypttarget"
-		return 1
-	fi
 
 	udev_settle
 	if [ ! -e "$NEWROOT" ]; then

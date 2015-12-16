@@ -332,8 +332,6 @@ setup_mapping()
 		return 1
 	fi
 
-	udev_settle
-
 	message "cryptsetup: $crypttarget set up successfully"
 	return 0
 }

@@ -296,12 +296,9 @@ setup_mapping()
 			return 1
 		fi
 
-		#FSTYPE=''
-		#eval $(fstype < "$NEWROOT")
 		FSTYPE="$(/sbin/blkid -s TYPE -o value "$NEWROOT")"
 
 		# See if we need to setup lvm on the crypto device
-		#if [ "$FSTYPE" = "lvm" ] || [ "$FSTYPE" = "lvm2" ]; then
 		if [ "$FSTYPE" = "LVM_member" ] || [ "$FSTYPE" = "LVM2_member" ]; then
 			if [ -z "$cryptlvm" ]; then
 				message "cryptsetup: lvm fs found but no lvm configured"
@@ -319,11 +316,9 @@ setup_mapping()
 					echo "ROOT=$NEWROOT" >>/conf/param.conf
 				fi
 			fi
-			#eval $(fstype < "$NEWROOT")
 			FSTYPE="$(/sbin/blkid -s TYPE -o value "$NEWROOT")"
 		fi
 
-		#if [ -z "$FSTYPE" ] || [ "$FSTYPE" = "unknown" ]; then
 		if [ -z "$FSTYPE" ]; then
 			message "cryptsetup: unknown fstype, bad password or options?"
 			$cryptremove

@@ -1,10 +1,11 @@
-cryptsetup (2:1.6.6-5ubuntu2+bug1481536.0~15.10.0) wily; urgency=medium
+cryptsetup (2:1.6.6-5ubuntu3) UNRELEASED; urgency=medium
 
-  * debian/initramfs/cryptroot-script: run 'udevadm settle' after
-    activating the LVM volume group to avoid a race condition that
-    results in an incorrect bad password error message.  LP: #1481536.
+  * debian/initramfs/cryptroot-script: don't call vgchange, which udev rules
+    already handle for us.  Instead we should be calling udevadm settle at
+    the right points to ensure devices are visible before we try to use
+    them.  Thanks to Richard Hansen for the analysis.  LP: #1481536.
 
- -- Richard Hansen <rhansen@rhansen.org>  Tue, 15 Dec 2015 20:11:48 -0500
+ -- Steve Langasek <steve.langasek@ubuntu.com>  Wed, 02 Dec 2015 21:20:13 -0800
 
 cryptsetup (2:1.6.6-5ubuntu2) wily; urgency=medium
 

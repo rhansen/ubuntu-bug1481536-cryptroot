@@ -286,13 +286,9 @@ setup_mapping()
 		fi
 		count=$(( $count + 1 ))
 
-		if ! crypttarget="$crypttarget" cryptsource="$cryptsource" \
-		     $cryptkeyscript "$cryptkey" | $cryptopen; then
-			message "cryptsetup: cryptsetup failed, bad password or options?"
-			continue
-		fi
-
-		break
+		crypttarget="$crypttarget" cryptsource="$cryptsource" \
+			$cryptkeyscript "$cryptkey" | $cryptopen && break
+		message "cryptsetup: cryptsetup failed, bad password or options?"
 	done
 
 	udev_settle

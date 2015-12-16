@@ -257,30 +257,29 @@ setup_mapping()
 	cryptremove="/sbin/cryptsetup remove $crypttarget"
 	NEWROOT="/dev/mapper/$crypttarget"
 
+	if [ -z "$cryptkeyscript" ]; then
+		if [ ${cryptsource#/dev/disk/by-uuid/} != $cryptsource ]; then
+			# UUIDs are not very helpful
+			diskname="$crypttarget"
+		else
+			diskname="$cryptsource ($crypttarget)"
+		fi
+
+		if [ -x /bin/plymouth ] && plymouth --ping; then
+			cryptkeyscript="plymouth ask-for-password --prompt"
+			# Plymouth will add a : if it is a non-graphical prompt
+			cryptkey="Please unlock disk $diskname"
+		else
+			cryptkeyscript="/lib/cryptsetup/askpass"
+			cryptkey="Please unlock disk $diskname: "
+		fi
+	fi
+
 	# Try to get a satisfactory password $crypttries times
 	count=0
 	while [ $crypttries -le 0 ] || [ $count -lt $crypttries ]; do
 		export CRYPTTAB_TRIED="$count"
 		count=$(( $count + 1 ))
-
-		if [ -z "$cryptkeyscript" ]; then
-			if [ ${cryptsource#/dev/disk/by-uuid/} != $cryptsource ]; then
-				# UUIDs are not very helpful
-				diskname="$crypttarget"
-			else
-				diskname="$cryptsource ($crypttarget)"
-			fi
-
-			if [ -x /bin/plymouth ] && plymouth --ping; then
-				cryptkeyscript="plymouth ask-for-password --prompt"
-				# Plymouth will add a : if it is a non-graphical prompt
-				cryptkey="Please unlock disk $diskname"
-			else
-				cryptkeyscript="/lib/cryptsetup/askpass"
-				cryptkey="Please unlock disk $diskname: "
-			fi
-		fi
-
 
 		if [ ! -e "$NEWROOT" ]; then
 			if ! crypttarget="$crypttarget" cryptsource="$cryptsource" \
@@ -288,44 +287,8 @@ setup_mapping()
 				message "cryptsetup: cryptsetup failed, bad password or options?"
 				continue
 			fi
-			udev_settle
 		fi
 
-		if [ ! -e "$NEWROOT" ]; then
-			message "cryptsetup: unknown error setting up device mapping"
-			return 1
-		fi
-
-		FSTYPE="$(/sbin/blkid -s TYPE -o value "$NEWROOT")"
-
-		# See if we need to setup lvm on the crypto device
-		if [ "$FSTYPE" = "LVM_member" ] || [ "$FSTYPE" = "LVM2_member" ]; then
-			if [ -z "$cryptlvm" ]; then
-				message "cryptsetup: lvm fs found but no lvm configured"
-				return 1
-			fi
-
-			# Apparently ROOT is already set in /conf/param.conf for
-			# flashed kernels at least. See bugreport #759720.
-			if [ -f /conf/param.conf ] && grep -q "^ROOT=" /conf/param.conf; then
-				NEWROOT=$(sed -n 's/^ROOT=//p' /conf/param.conf)
-			else
-				NEWROOT=${cmdline_root:-/dev/mapper/$cryptlvm}
-				if [ "$cryptrootdev" = "yes" ]; then
-					# required for lilo to find the root device
-					echo "ROOT=$NEWROOT" >>/conf/param.conf
-				fi
-			fi
-			FSTYPE="$(/sbin/blkid -s TYPE -o value "$NEWROOT")"
-		fi
-
-		if [ -z "$FSTYPE" ]; then
-			message "cryptsetup: unknown fstype, bad password or options?"
-			$cryptremove
-			continue
-		fi
-
-		message "cryptsetup: $crypttarget set up successfully"
 		break
 	done
 
@@ -335,6 +298,43 @@ setup_mapping()
 	fi
 
 	udev_settle
+	if [ ! -e "$NEWROOT" ]; then
+		message "cryptsetup: unknown error setting up device mapping"
+		return 1
+	fi
+
+	FSTYPE="$(/sbin/blkid -s TYPE -o value "$NEWROOT")"
+
+	# See if we need to setup lvm on the crypto device
+	if [ "$FSTYPE" = "LVM_member" ] || [ "$FSTYPE" = "LVM2_member" ]; then
+		if [ -z "$cryptlvm" ]; then
+			message "cryptsetup: lvm fs found but no lvm configured"
+			return 1
+		fi
+
+		# Apparently ROOT is already set in /conf/param.conf for
+		# flashed kernels at least. See bugreport #759720.
+		if [ -f /conf/param.conf ] && grep -q "^ROOT=" /conf/param.conf; then
+			NEWROOT=$(sed -n 's/^ROOT=//p' /conf/param.conf)
+		else
+			NEWROOT=${cmdline_root:-/dev/mapper/$cryptlvm}
+			if [ "$cryptrootdev" = "yes" ]; then
+				# required for lilo to find the root device
+				echo "ROOT=$NEWROOT" >>/conf/param.conf
+			fi
+		fi
+		FSTYPE="$(/sbin/blkid -s TYPE -o value "$NEWROOT")"
+	fi
+
+	if [ -z "$FSTYPE" ]; then
+		message "cryptsetup: unknown fstype, bad password or options?"
+		$cryptremove
+		return 1
+	fi
+
+	udev_settle
+
+	message "cryptsetup: $crypttarget set up successfully"
 	return 0
 }
 

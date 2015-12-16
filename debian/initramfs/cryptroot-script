@@ -277,7 +277,8 @@ setup_mapping()
 
 	# Try to get a satisfactory password $crypttries times
 	count=0
-	while true; do
+	export CRYPTTAB_TRIED="$count"
+	while [ ! -e "$NEWROOT" ]; do
 		export CRYPTTAB_TRIED="$count"
 		if [ $crypttries -gt 0 ] && [ $count -ge $crypttries ]; then
 			message "cryptsetup: maximum number of tries exceeded for $crypttarget"
@@ -285,12 +286,10 @@ setup_mapping()
 		fi
 		count=$(( $count + 1 ))
 
-		if [ ! -e "$NEWROOT" ]; then
-			if ! crypttarget="$crypttarget" cryptsource="$cryptsource" \
-			     $cryptkeyscript "$cryptkey" | $cryptopen; then
-				message "cryptsetup: cryptsetup failed, bad password or options?"
-				continue
-			fi
+		if ! crypttarget="$crypttarget" cryptsource="$cryptsource" \
+		     $cryptkeyscript "$cryptkey" | $cryptopen; then
+			message "cryptsetup: cryptsetup failed, bad password or options?"
+			continue
 		fi
 
 		break

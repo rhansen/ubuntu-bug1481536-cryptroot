@@ -160,7 +160,7 @@ parse_options()
 wait_for()
 {
 	if [ ! -e "$1" ]; then
-		log_begin_msg "Waiting for ${2-$1}..."
+		log_begin_msg "Waiting for ${2-$1}"
 
 		# Default delay is 180s
 		slumber=${ROOTDELAY:-180}

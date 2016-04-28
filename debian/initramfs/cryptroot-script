@@ -293,8 +293,9 @@ setup_mapping()
 
 	if ! wait_for "$NEWROOT" "unlocked device"; then
 		message "cryptsetup: unknown error setting up device mapping"
-		return 1
+		panic "ALERT! ${NEWROOT} does not exist."
 	fi
+	[ -e "${NEWROOT}" ] || return 1
 
 	FSTYPE="$(/sbin/blkid -s TYPE -o value "$NEWROOT")"
 
@@ -319,9 +320,9 @@ setup_mapping()
 
 		if ! wait_for "$NEWROOT" "LVM logical volume"; then
 			message "cryptsetup: unknown error setting up LVM logical volume"
-			$cryptremove
-			return 1
+			panic "ALERT! ${NEWROOT} does not exist."
 		fi
+		[ -e "${NEWROOT}" ] || return 1
 
 		FSTYPE="$(/sbin/blkid -s TYPE -o value "$NEWROOT")"
 	fi

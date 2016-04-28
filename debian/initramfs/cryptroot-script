@@ -155,6 +155,20 @@ parse_options()
 	return 0
 }
 
+activate_vg()
+{
+	# Sanity checks
+	if [ ! -x /sbin/lvm ]; then
+		message "cryptsetup: lvm is not available"
+		return 1
+	fi
+
+	# Detect and activate available volume groups
+	/sbin/lvm vgscan
+	/sbin/lvm vgchange -a y --sysinit
+	return $?
+}
+
 # arg #1:  device to wait for
 # arg #2 (optional):  description of what we're waiting for, defaults to $1
 wait_for()
@@ -225,6 +239,12 @@ setup_mapping()
 	modprobe -q dm_crypt
 
 	# Make sure the cryptsource device is available
+	if [ ! -e $cryptsource ]; then
+		activate_vg
+	fi
+
+	# If the encrypted source device hasn't shown up yet, give it a
+	# little while to deal with removable devices
 	if ! wait_for "$cryptsource" "encrypted source device"; then
 		# We've given up, but we'll let the user fix matters
 		# if they can
@@ -303,6 +323,10 @@ setup_mapping()
 	if [ "$FSTYPE" = "LVM_member" ] || [ "$FSTYPE" = "LVM2_member" ]; then
 		if [ -z "$cryptlvm" ]; then
 			message "cryptsetup: lvm fs found but no lvm configured"
+			return 1
+		elif ! activate_vg; then
+			# disable error message, LP: #151532
+			#message "cryptsetup: failed to setup lvm device"
 			return 1
 		fi
 

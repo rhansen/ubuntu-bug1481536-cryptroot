@@ -1,22 +1,15 @@
-cryptsetup (2:1.6.6-5ubuntu2+bug1481536.3~16.04.0) xenial; urgency=medium
+cryptsetup (2:1.6.6-5ubuntu2+bug1481536.4~16.04.0) xenial; urgency=medium
 
-  [ Steve Langasek ]
-  * debian/initramfs/cryptroot-script: don't call vgchange, which udev rules
-    already handle for us.  Instead we should be calling udevadm settle at
-    the right points to ensure devices are visible before we try to use
-    them.  Thanks to Richard Hansen for the analysis.  LP: #1481536.
-
-  [ Richard Hansen ]
   * debian/initramfs/cryptroot-script:
-    - don't assume devices will exist after running 'udevadm settle'
-      (wait until they appear, with a timeout)
-    - wait for the LVM logical volume device to appear before trying
-      to determine its filesystem type
-    - remove an unnecessary call to udev_settle()
+    - run 'udevadm settle' at the right points to ensure devices are
+      visible before we try to use them
+    - don't assume devices will exist immediately after running
+      'udevadm settle' (wait until they appear, with a timeout)
+    - remove an unnecessary run of 'udevadm settle'
     - miscellaneous cleanups
     LP: #1481536
 
- -- Richard Hansen <rhansen@rhansen.org>  Wed, 16 Dec 2015 15:49:33 -0500
+ -- Richard Hansen <rhansen@rhansen.org>  Thu, 28 Apr 2016 03:31:45 -0400
 
 cryptsetup (2:1.6.6-5ubuntu2) wily; urgency=medium
 
